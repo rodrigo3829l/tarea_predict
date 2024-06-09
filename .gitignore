@@ -1,0 +1,10 @@
+myenv/
+
+_pycahce_/
+
+*.pyc
+
+*.pyo
+
+.env/
+.venv
