@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción de Incumplimiento de Pago</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Predicción de incumplimiento de pago del mes</h2>
+        <form id="formulario" onsubmit="predict(event)">
+            <div class="form-group">
+                <label for="estado_pago">Estado de pago</label>
+                <select class="form-control" id="estado_pago" name="estado_pago" required>
+                    <option value="" disabled selected>Seleccione el estado de pago</option>
+                    <option value="no consumo">No se uso la tarjeta este mes</option>
+                    <option value="no retraso">Sin  retrasos</option>
+                    <option value="pago puntual">Pago puntual</option>
+                    <option value="retraso">Retraso</option>
+                </select>
+            </div>
+            <div class="form-group" id="input_pay">
+
+            </div>
+            <button type="submit" class="btn btn-primary">Predecir</button>
+        </form>
+        
+        <div id="alert">
+                            
+                            
+        </div>
+        
+    </div>
+    <script>
+        const alerta = document.getElementById('alert')
+        const select = document.getElementById('estado_pago');
+        select.addEventListener('change', () => {
+            alerta.innerHTML = ``
+            const pago = select.value;
+            const divInputPay = document.getElementById("input_pay");
+            if (pago === 'retraso') {
+                divInputPay.innerHTML = `
+                    <label for="meses_retraso">Meses de retraso</label>
+                    <input type="number" class="form-control" id="meses_retraso">
+                `;
+            } else {
+                divInputPay.innerHTML = '';
+            }
+        });
+
+        function predict(event){
+            event.preventDefault();
+            let pay_0 = -1
+            if(select.value === 'retraso'){
+                const retraso = document.getElementById('meses_retraso').value
+                if(retraso < 0){
+                    alert('EL retraso no puede menor de 0 meses')
+                    return
+                }
+                pay_0 = (retraso) ? parseInt(retraso) : -1
+            }
+            if(select.value === 'no consumo'){
+                pay_0 = -2
+            }
+            if(select.value === 'no retraso'){
+                pay_0 = 0
+            }
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `pago=${pay_0}`,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alerta.innerHTML = `
+                        <div class="alert alert-danger mt-3" role="alert">
+                            <p>${data.error}</p>
+                        </div>
+                        `
+                    } else {
+                        if(data.retraso === 'No se retrasará'){
+                            alerta.innerHTML = `
+                            <div class="alert alert-success mt-3" role="alert">
+                                <p>${data.retraso}</p>
+                            </div>
+                            `
+                        }else{
+                            alerta.innerHTML = `
+                            <div class="alert alert-danger mt-3" role="alert">
+                                <p>${data.retraso}</p>
+                            </div>
+                            `
+                        }
+                        
+                    }
+
+                })
+                .catch(error => {
+                    alert('error en la solicitud')
+                    console.error('Error:', error);
+                });
+                select.value = ''
+        }
+    </script>
+</body>
+</html>
